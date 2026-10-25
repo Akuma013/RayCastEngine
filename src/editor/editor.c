@@ -39,8 +39,8 @@ void addTextures(int x, int y){
 void save(){
     int x,y;
     char fileName[32];
-    // snprintf(fileName, sizeof(fileName), "levels/level_%d_data.dat", currentLevel);
-    snprintf(fileName, sizeof(fileName), "levels/level_%d.dat", currentLevel);
+    snprintf(fileName, sizeof(fileName), "levels/level_%d_data.dat", currentLevel);
+    //snprintf(fileName, sizeof(fileName), "levels/level_%d.dat", currentLevel);
 
     FILE *fp = fopen(fileName, "w");
     if(fp == NULL){return;}
@@ -64,9 +64,9 @@ void save(){
     }
 
     //walls, floor, ceiling
-    for(x = 0; x < mapX * mapY; x++){
-        fprintf(fp, "%i,%i,%i,", mapW[x], mapF[x], mapC[x]);
-    }
+    // for(x = 0; x < mapX * mapY; x++){
+    //     fprintf(fp, "%i,%i,%i,", mapW[x], mapF[x], mapC[x]);
+    // }
 
 
     //enemyCount
@@ -79,11 +79,11 @@ void save(){
 }
 
 
-void load(){
+void load_data(){
     int x,y;
     char fileName[32];
-    snprintf(fileName, sizeof(fileName), "levels/level_%d.dat", currentLevel);
-    // snprintf(fileName, sizeof(fileName), "levels/level_%d_data.dat", currentLevel);
+    //snprintf(fileName, sizeof(fileName), "levels/level_%d.dat", currentLevel);
+    snprintf(fileName, sizeof(fileName), "levels/level_%d_data.dat", currentLevel);
 
     FILE *fp = fopen(fileName, "r");
 
@@ -118,13 +118,13 @@ void load(){
     }
 
     //walls, floors, ceiling
-    for(x = 0; x < mapX * mapY; x++){
+    // for(x = 0; x < mapX * mapY; x++){
         
         
-        fscanf(fp, "%i", &mapW[x]); c = getc(fp); // not used for now
-        fscanf(fp, "%i", &mapF[x]); c = getc(fp);
-        fscanf(fp, "%i", &mapC[x]); c = getc(fp);
-    }
+    //     fscanf(fp, "%i", &mapW[x]); c = getc(fp); // not used for now
+    //     fscanf(fp, "%i", &mapF[x]); c = getc(fp);
+    //     fscanf(fp, "%i", &mapC[x]); c = getc(fp);
+    // }
     
 
     //enemyCount
@@ -133,26 +133,30 @@ void load(){
  
     //close
     fclose(fp);
-    
-
-
-    //open maze to read
-    // snprintf(fileName, sizeof(fileName), "levels/level_%d_map.dat", currentLevel);
-    // fp = fopen(fileName, "r");
-
-    // if(fp == NULL){printf("No file to load\n"); return;}
-
-    // for (x = 0; x < mapX*mapY; x++)
-    // {
-    //     fscanf(fp, "%i", &mapW[x]); c = getc(fp);
-    // }
-    // //close
-    // fclose(fp);
-
-    //print if loaded
-    printf("loaded level: %i\n", currentLevel);
-
 }
+
+// void load_map(){
+//     int x,y;
+//     //open maze to read
+//     char fileName[32];
+//     snprintf(fileName, sizeof(fileName), "levels/level_%d_map.dat", currentLevel);
+//     FILE *fp = fopen(fileName, "r");
+
+//     if(fp == NULL){printf("No file to load\n"); return;}
+
+//     char c;
+//     for (x = 0; x < mapX*mapY; x++)
+//     {
+//         fscanf(fp, "%i", &mapW[x]); c = getc(fp);
+//     }
+//     //close
+//     fclose(fp);
+
+//     //print if loaded
+//     printf("loaded level: %i\n", currentLevel);
+
+// }
+
 void mouse(int button, int state, int x, int y){
     //Add to array
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
@@ -175,7 +179,7 @@ void mouse(int button, int state, int x, int y){
             else if(y/8 >= 16 + 8 * 7 && y/8 < 24 + 8 * 7 ) { if(buttonState > 0) {buttonState = 0;} else {buttonState = 8; } printf("Play The Game\n");}
          
             if(buttonState == 1){save();} //save
-            if(buttonState == 2){load();} // load
+            if(buttonState == 2){load_data(); load_maze();} // load
             if(buttonState == 3){ pa += 45; if(pa > 359){pa -= 360;} pdx = cos(degToRad(pa)); pdy = -sin(degToRad(pa)); } //rotate player by 45 degrees
             if(buttonState == 4){
                 int s = numSprite;

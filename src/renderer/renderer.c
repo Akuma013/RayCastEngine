@@ -66,7 +66,7 @@ void drawMapRays2D(){
         glLineWidth(2);
         glBegin(GL_LINES);
         glColor3f(0,1, 0);
-        for (int i = 0; i < 240; i++)
+        for (int i = 0; i < RENDER_WIDTH; i++)
         {
             glVertex2i(px /map_scale, py /map_scale);
             glVertex2i(rayX[i]/map_scale, rayY[i]/map_scale);
@@ -118,8 +118,8 @@ void drawPlayer2D(){
 //DRAW SKY
 void draw_sky(){
     int x, y;
-    float qw = 16;  // quad width  = 16
-    float qh = 13.5;   // quad height = 13.5
+    float qw = (float)RENDER_WIDTH / 120.0f;
+    float qh = (float)RENDER_HEIGHT / 80.0f;
     glBegin(GL_QUADS); 
     for (y = 0; y < 40; y++) // 40
     {
@@ -192,11 +192,7 @@ void screen(int v){
 void init(){
     glClearColor(0.3,0.3,0.3,0);
     glPointSize(8); //AAAAAAA
-    px=150; 
-    py=400; 
-    pa=90;
-    pdx=cos(degToRad(pa)); 
-    pdy=-sin(degToRad(pa)); 
+    restore();
     
     glGenTextures(1, &screenTex); //create
     glBindTexture(GL_TEXTURE_2D, screenTex); // choose as current one
@@ -317,14 +313,14 @@ void render(){
     glEnable(GL_TEXTURE_2D);
     glBegin(GL_QUADS);
     glTexCoord2f(0,0); glVertex2i(0,0);
-    glTexCoord2f(1,0); glVertex2i(RENDER_WIDTH, 0);
-    glTexCoord2f(1,1); glVertex2i(RENDER_WIDTH, RENDER_HEIGHT);
-    glTexCoord2f(0,1); glVertex2i(0, RENDER_HEIGHT);
+    glTexCoord2f(1,0); glVertex2i(1920, 0);
+    glTexCoord2f(1,1); glVertex2i(1920, 1080);
+    glTexCoord2f(0,1); glVertex2i(0, 1080);
     glEnd();
     glDisable(GL_TEXTURE_2D);
 
-    // drawMap2D();
-    // drawMapRays2D();
-    // drawPlayer2D();
+    drawMap2D();
+    drawMapRays2D();
+    drawPlayer2D();
     
 }

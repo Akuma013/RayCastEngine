@@ -35,7 +35,7 @@ void shuffle_directions(int directions[4]);
 void generate_maze(void);
 void print_maze(int maze[MAZE_HEIGHT][MAZE_WIDTH]);
 void save_maze(int maze[MAZE_HEIGHT][MAZE_WIDTH]);
-void load_maze(int maze[MAZE_HEIGHT][MAZE_WIDTH]);
+void load_maze();
 
 
 

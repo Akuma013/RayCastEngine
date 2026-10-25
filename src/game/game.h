@@ -1,8 +1,6 @@
 #ifndef GAME_H
 #define GAME_H
 
-
-
 #define M_PI 3.14159265358979323846
 
 extern int mapX;  // map width
@@ -49,6 +47,7 @@ typedef struct
 
 
 void game_update();
+void restore();
 
 extern sprite sp[MAX_SPRITES];
 extern ButtonKeys Keys;

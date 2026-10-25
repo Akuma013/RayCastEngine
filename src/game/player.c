@@ -23,7 +23,7 @@ void player_rotate(float amount)
 
 
 void player_move(){
-     float dt = frame_time_ms > 60 ? 60 : frame_time_ms;
+    float dt = frame_time_ms > 60 ? 60 : frame_time_ms;
 
     float mx = 0;
     float my = 0;

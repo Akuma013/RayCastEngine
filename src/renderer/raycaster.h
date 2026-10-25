@@ -6,8 +6,8 @@
 #define COLUMN_W   (RENDER_WIDTH / NUM_RAYS)   // pixels each ray covers
 #define HALF_H   (RENDER_HEIGHT / 2)
 
-#define SHADE_FALLOFF 192.0f   // distance where shade would hit 0
-#define SHADE_MIN     0.02f
+#define SHADE_FALLOFF 320.0f   // distance where shade would hit 0
+#define SHADE_MIN     0.1f
 
 extern int depth[NUM_RAYS];
 extern float rx, ry;

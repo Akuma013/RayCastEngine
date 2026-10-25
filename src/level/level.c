@@ -159,7 +159,6 @@ void generate_maze(void)
     }
 
     save_maze(maze);
-    load_maze(maze);
 }
 
 
@@ -208,7 +207,7 @@ void save_maze(int maze[MAZE_HEIGHT][MAZE_WIDTH])
     printf("\nMaze saved successfully to: %s\n", fileName);
 }
 //load maze to mapW[]
-void load_maze(int maze[MAZE_HEIGHT][MAZE_WIDTH]){
+void load_maze(){
     char fileName[32];
     snprintf(fileName, sizeof(fileName), "levels/level_%d_map.dat", currentLevel);
 
@@ -223,7 +222,7 @@ void load_maze(int maze[MAZE_HEIGHT][MAZE_WIDTH]){
     // Write every matrix value to the file
     for (int r = 0; r < mapY; r++){
         for (int c = 0; c < mapX; c++){
-             fscanf(file, "%i", &mapW[r * mapX + c]);
+             fscanf(file, "%d,", &mapW[r * mapX + c]);
         }
     }
 

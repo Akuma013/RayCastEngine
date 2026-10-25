@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "game.h"
 #include "player.h"
 #include "../audio/audio.h"
@@ -37,6 +39,17 @@ float fade;
 float enemySoundTimer = 0;
 
 
+void restore(){
+    px=96; 
+    py=(mapY - 1) * 64 - 32; 
+    pa=90;
+    pdx=cos(degToRad(pa)); 
+    pdy=-sin(degToRad(pa)); 
+    mapW[mapY * mapX - 2 * mapX + 1] = 0;
+    mapW[2 * mapX - 2] = 0;
+    mapF[2 * mapX - 2] = 15;
+}
+
 void game_update(){
     //2d edit
     if(gameState == -1){ glutSetCursor(GLUT_CURSOR_INHERIT);mapEditor();}
@@ -44,8 +57,11 @@ void game_update(){
     else{
         if (gameState == 0) { 
             //generate random maze
-            load();
-            // generate_maze();
+            load_data();
+            generate_maze();
+            load_maze();
+            restore();
+            
             // mapF[mapX*mapY - mapX - 2] = 20;
             loadEnemySounds();
             fade = 0; timer = 0; gameState = 1;
@@ -91,6 +107,9 @@ void game_update(){
             }    
         }
         else if (gameState == 4) { //lose screen
+            //reset player position
+            px=96; 
+            py=(mapY - 1) * 64 - 32; 
             screen(3);
             timer +=1 * frame_time_ms; 
             if (timer > 5000){

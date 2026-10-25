@@ -78,23 +78,24 @@ void drawSprite(){
         float a = sy * CS + sx * SN;
         float b = sx * CS - sy * SN;
         sx = a, sy = b;
-        const float focalLength = 1728.0f;
+        const float focalLength = 0.9f * RENDER_WIDTH;  //was 1728.0f
         sx = (sx * focalLength /sy) + (RENDER_WIDTH/2); //convert to screen x, y   prev  120,80
         sy = (sz * focalLength /sy) + (RENDER_HEIGHT/2); //previous magic number 108.0
 
         
-        int scale = 32*RENDER_HEIGHT/b; //80
-        if(scale < 0){scale = 0;} if(scale > RENDER_WIDTH){scale = RENDER_WIDTH;} 
+        int scale = SPRITE_HEIGHT*RENDER_HEIGHT/b; //80
+        if(scale < 0){scale = 0;} if(scale > RENDER_HEIGHT){scale = RENDER_HEIGHT;}  // was render width
 
-        float t_x = 0, t_y = 31;
-        float t_x_step = 31.5 / (float) scale, t_y_step = 32.0 / (float)scale;
+        float t_x = 0, t_y = SPRITE_HEIGHT - 1;
+        float t_x_step = (float)(SPRITE_WIDTH - 0.5f) / (float) scale;
+        float t_y_step = (float)SPRITE_HEIGHT / (float)scale;
 
         for ( x = sx - scale/2; x < sx + scale/2 ; x++){
             t_y = 31;
             for (y = 0; y < scale; y++)
             {
-                if (sp[s].state == 1 && x > 0 && x < 1920 && b > 0 && b < depth[x /COLUMN_W]){
-                    int pixel = ((int)t_y*32 + (int) t_x ) * 3 + (sp[s].map * 32*32*3);
+                if (sp[s].state == 1 && x > 0 && x < RENDER_WIDTH && b > 0 && b < depth[x /COLUMN_W]){
+                    int pixel = ((int)t_y*SPRITE_WIDTH + (int) t_x ) * 3 + (sp[s].map * SPRITE_HEIGHT*SPRITE_WIDTH*3);
                     int red = sprites[pixel + 0];
                     int green = sprites[pixel + 1];
                     int blue = sprites[pixel + 2];
