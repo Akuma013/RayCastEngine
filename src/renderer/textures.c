@@ -1,5 +1,5 @@
 #include <GL/gl.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 
 #include "textures.h"
 

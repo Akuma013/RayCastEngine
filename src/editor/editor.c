@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <GL/gl.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 
 #include <math.h>
 #include <float.h>
@@ -11,6 +11,7 @@
 
 #include "../game/game.h"
 #include "../game/player.h"
+#include "../game/map.h"
 #include "../renderer/textures.h"
 
 #include "../renderer/raycaster.h"
@@ -26,13 +27,13 @@ void addTextures(int x, int y){
     y = y/48;
 
     //cant add outside of map area
-    if(x > mapX || y > mapY) {return;}
+    if(x > map.width || y > map.height) {return;}
 
     //add on click or dragging
-    int arrayPosition = y * mapX + x;
-    if(currentMap == 0) { mapW[arrayPosition] = currrentTexture;}
-    if(currentMap == 1) { mapF[arrayPosition] = currrentTexture;}
-    if(currentMap == 2) { mapC[arrayPosition] = currrentTexture;}
+    int arrayPosition = y * map.width + x;
+    if(currentMap == 0) { map.walls[arrayPosition] = currrentTexture;}
+    if(currentMap == 1) { map.floors[arrayPosition] = currrentTexture;}
+    if(currentMap == 2) { map.ceilings[arrayPosition] = currrentTexture;}
 
 }
 
@@ -46,7 +47,7 @@ void save(){
     if(fp == NULL){return;}
 
     //map width height
-    fprintf(fp, "%i,%i,", mapX, mapY);
+    fprintf(fp, "%i,%i,", map.width, map.height);
 
     //player info
     fprintf(fp, "%f,%f,%f,", px, py, pa);    
@@ -91,8 +92,8 @@ void load_data(){
 
     char c;
     //map width and height
-    fscanf(fp, "%i", &mapX); c = getc(fp);
-    fscanf(fp, "%i", &mapY); c = getc(fp);
+    fscanf(fp, "%i", &map.width); c = getc(fp);
+    fscanf(fp, "%i", &map.height); c = getc(fp);
 
     //player variables
     fscanf(fp, "%f", &px); c = getc(fp);
@@ -135,126 +136,6 @@ void load_data(){
     fclose(fp);
 }
 
-// void load_map(){
-//     int x,y;
-//     //open maze to read
-//     char fileName[32];
-//     snprintf(fileName, sizeof(fileName), "levels/level_%d_map.dat", currentLevel);
-//     FILE *fp = fopen(fileName, "r");
-
-//     if(fp == NULL){printf("No file to load\n"); return;}
-
-//     char c;
-//     for (x = 0; x < mapX*mapY; x++)
-//     {
-//         fscanf(fp, "%i", &mapW[x]); c = getc(fp);
-//     }
-//     //close
-//     fclose(fp);
-
-//     //print if loaded
-//     printf("loaded level: %i\n", currentLevel);
-
-// }
-
-void mouse(int button, int state, int x, int y){
-    //Add to array
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
-    {
-        // mouse click add, texture
-        addTextures(x, y);
-
-
-        //click over buttons
-        // printf("x:%d, y:%d\n", x, y); //for check
-        if(x/8 >= 223){
-            if(y/8 < 16 + 8 * 0){currrentTexture++; if(currrentTexture > 15){currrentTexture = 0;} } //next texture
-            else if(y/8 >= 16 + 8 * 0 && y/8 < 24 + 8 * 0 ) { if(buttonState > 0) {buttonState = 0;} else {buttonState = 1; } printf("Save\n");}
-            else if(y/8 >= 16 + 8 * 1 && y/8 < 24 + 8 * 1 ) { if(buttonState > 0) {buttonState = 0;} else {buttonState = 2; } printf("Load\n");}
-            else if(y/8 >= 16 + 8 * 2 && y/8 < 24 + 8 * 2 ) { if(buttonState > 0) {buttonState = 0;} else {buttonState = 3; } printf("Player Rotate\n");}
-            else if(y/8 >= 16 + 8 * 3 && y/8 < 24 + 8 * 3 ) { if(buttonState > 0) {buttonState = 0;} else {buttonState = 4; } printf("Add Enemy\n");}
-            else if(y/8 >= 16 + 8 * 4 && y/8 < 24 + 8 * 4 ) { if(buttonState > 0) {buttonState = 0;} else {buttonState = 5; } printf("View Walls\n");}
-            else if(y/8 >= 16 + 8 * 5 && y/8 < 24 + 8 * 5 ) { if(buttonState > 0) {buttonState = 0;} else {buttonState = 6; } printf("View Floors\n");}
-            else if(y/8 >= 16 + 8 * 6 && y/8 < 24 + 8 * 6 ) { if(buttonState > 0) {buttonState = 0;} else {buttonState = 7; } printf("View Ceiling\n");}
-            else if(y/8 >= 16 + 8 * 7 && y/8 < 24 + 8 * 7 ) { if(buttonState > 0) {buttonState = 0;} else {buttonState = 8; } printf("Play The Game\n");}
-         
-            if(buttonState == 1){save();} //save
-            if(buttonState == 2){load_data(); load_maze();} // load
-            if(buttonState == 3){ pa += 45; if(pa > 359){pa -= 360;} pdx = cos(degToRad(pa)); pdy = -sin(degToRad(pa)); } //rotate player by 45 degrees
-            if(buttonState == 4){
-                int s = numSprite;
-                sp[s].type = 3; sp[s].state = 1; sp[s].map = 2; sp[s].x = numSprite*32; sp[s].y = 1*32; sp[s].z = 20; //add enemy
-                sp[s].r = 255; sp[s].g = 255; sp[s].b = 0;
-                numSprite++;
-                enemyCount++;
-            } 
-            if(buttonState == 5){currentMap = 0;} // view walls
-            if(buttonState == 6){currentMap = 1;} //view floors
-            if(buttonState == 7){currentMap = 2;} // view ceiling
-            if(buttonState == 8){gameState = 0;} //start the game
-        }
-    }
-    if(button == GLUT_LEFT_BUTTON && state == GLUT_UP){
-       //toggle buttons
-       if (x/8 >= 104) {buttonState = 0;}
-        
-    }
-
-
-    //right button down
-    if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN){
-        //previous texture
-        if(x/8 >= 104 && y/8 < 16){currrentTexture--; if(currrentTexture < 0){currrentTexture = 15;} }
-
-
-        //convert mouse to grid
-        int mx = x*64/6/8;
-        int my = y*64/6/8;
-
-        //select player
-        if(mx + 10 > px && mx - 10 < px && my + 10 > py && my - 10 < py){dragItem = 1;}
-
-        //check all sprites if selected
-        for (int i = 0; i < numSprite; i++)
-        {
-            if(mx + 10 > sp[i].x && mx - 10 < sp[i].x && my + 10 > sp[i].y && my - 10 < sp[i].y){dragItem = i + 10; break;}
-        }
-        
-    }
-    //right button up
-    if (button == GLUT_RIGHT_BUTTON && state == GLUT_UP){dragItem = 0;}
-    
-}
-
-
-void MouseMove(int x, int y){
-    if(gameState == -1) { //player
-        if(dragItem == 1){
-            px = x * 64/6/8;
-            py = y * 64/6/8;
-        }
-        //move sprites
-        else if (dragItem > 1)
-        {
-            sp[dragItem - 10].x = x *64/6/8;
-            sp[dragItem - 10].y = y *64/6/8;
-        }
-        else if(dragItem == 0){
-            addTextures(x, y);
-        }
-        
-        glutPostRedisplay();
-    }else if(gameState == 2){
-        if (x == centerX && y == centerY) return;
-
-        delta = centerX - x;
-        player_rotate(delta * sensitivity);
-        glutWarpPointer(centerX, centerY);
-    }
-    
-    
-}
-
 
 void drawSquareFromArray(int v, int posX, int posY, int *array, int black){
     if (array[v] == 0){return;} //skip if not wall
@@ -267,7 +148,7 @@ void drawSquareFromArray(int v, int posX, int posY, int *array, int black){
             int green = All_Textures[pixel * 3 + 1];
             int blue = All_Textures[pixel * 3 + 2];
             if (black == 1 && array[v] *TEX*TEX > 0){
-                if(currentMap == 2 && mapC[posY*mapX + posX] == 0){
+                if(currentMap == 2 && map.ceilings[posY*map.width + posX] == 0){
                     red = 255; green = 255; blue = 255;
                 }else{
                     red = 0, green = 0, blue = 0;
@@ -315,14 +196,14 @@ void mapEditor(){
     glEnd();
 
     //grid
-    for (y = 0; y < mapY; y++)
+    for (y = 0; y < map.height; y++)
     {
-        for (x = 0; x < mapX; x++)
+        for (x = 0; x < map.width; x++)
         {
-            if(currentMap == 0){drawSquareFromArray(x + y*mapX, x, y, mapW, 0);}
-            if(currentMap == 1){drawSquareFromArray(x + y*mapX, x, y, mapF, 0);}
-            if(currentMap == 2){drawSquareFromArray(x + y*mapX, x, y, mapC, 0);}
-            if(currentMap > 0){drawSquareFromArray(x + y*mapX, x, y, mapW, 1);} //draw black walls
+            if(currentMap == 0){drawSquareFromArray(x + y*map.width, x, y, map.walls, 0);}
+            if(currentMap == 1){drawSquareFromArray(x + y*map.width, x, y, map.floors, 0);}
+            if(currentMap == 2){drawSquareFromArray(x + y*map.width, x, y, map.ceilings, 0);}
+            if(currentMap > 0){drawSquareFromArray(x + y*map.width, x, y, map.walls, 1);} //draw black walls
             
         }
         

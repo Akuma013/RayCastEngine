@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include <stdio.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 #include <math.h>
 #include <float.h>
 #include <string.h>
@@ -14,6 +14,7 @@
 
 #include "../game/game.h"
 #include "../game/player.h"
+#include "../game/map.h"
 
 //public
 float rx, ry;
@@ -74,7 +75,7 @@ RayHit castRay(float ra){
     int hmt = 0;
     float cos_ra = cos(degToRad(ra));    
 
-    const int maxDof = mapX + mapY;
+    const int maxDof = map.width + map.height;
 
         //Check Vewrtical Lines
         disV = FLT_MAX;
@@ -103,13 +104,13 @@ RayHit castRay(float ra){
         while(dof < maxDof){
             mx = (int) rx >> 6;
             my = (int) ry >> 6;
-            mp = my * mapX + mx;
-            if(mx < 0 || mx >= mapX || my < 0 || my >= mapY){
+            mp = my * map.width + mx;
+            if(mx < 0 || mx >= map.width || my < 0 || my >= map.height){
                 break; //out of bounds or hit wall
             }
-            else if (mapW[mp] > 0)//HIT A WALL
+            else if (map.walls[mp] > 0)//HIT A WALL
             {
-                vmt = mapW[mp];
+                vmt = map.walls[mp];
                 dof = maxDof;
                 disV = distance(px, py, rx, ry, ra);
             }
@@ -151,13 +152,13 @@ RayHit castRay(float ra){
         while(dof < maxDof){
             mx = (int) rx >> 6;
             my = (int) ry >> 6;
-            mp = my * mapX + mx;
-            if(mx < 0 || mx >= mapX || my < 0 || my >= mapY){
+            mp = my * map.width + mx;
+            if(mx < 0 || mx >= map.width || my < 0 || my >= map.height){
                 break; //out of bounds or hit wall
             }
-            else if (mapW[mp] > 0)//HIT A WALL
+            else if (map.walls[mp] > 0)//HIT A WALL
             {
-                hmt = mapW[mp];
+                hmt = map.walls[mp];
                 dof = maxDof;
                 disH = distance(px, py, rx, ry, ra);
             }
@@ -291,23 +292,23 @@ void drawRays2D(){
             int ix = (int)floorf(px4 + colFx[r] * D);
             int iy = (int)floorf(py4 + colFy[r] * D);
             int cx = ix >> 8, cy = iy >> 8;                           // TEX = 256
-            if (cx < 0) cx = 0; else if (cx >= mapX) cx = mapX - 1;
-            if (cy < 0) cy = 0; else if (cy >= mapY) cy = mapY - 1;
+            if (cx < 0) cx = 0; else if (cx >= map.width) cx = map.width - 1;
+            if (cy < 0) cy = 0; else if (cy >= map.height) cy = map.height - 1;
             // if (cx < 0 || cx >= mapX || cy < 0 || cy >= mapY) continue;   // was reading out of bounds
-            int cell = cy * mapX + cx;
+            int cell = cy * map.width + cx;
             int tofs = ((iy & TEX_MASK) * TEX + (ix & TEX_MASK)) * 3;
 
            for (int c = 0; c < COLUMN_W; c++)
            {
             int screenX = r * COLUMN_W + c;
             if (doFloor){
-                const unsigned char *t = &All_Textures[mapF[cell] * TEX * TEX * 3 + tofs];
+                const unsigned char *t = &All_Textures[map.floors[cell] * TEX * TEX * 3 + tofs];
                 fl[screenX*3+0] = (t[0] * shade) >> 8;
                 fl[screenX*3+1] = (t[1] * shade) >> 8;
                 fl[screenX*3+2] = (t[2] * shade) >> 8;
             }
-            if (doCeil && mapC[cell] > 0){
-                const unsigned char *t = &All_Textures[mapC[cell] * TEX * TEX * 3 + tofs];
+            if (doCeil && map.ceilings[cell] > 0){
+                const unsigned char *t = &All_Textures[map.ceilings[cell] * TEX * TEX * 3 + tofs];
                 ce[screenX*3+0] = (t[0] * shade) >> 8;
                 ce[screenX*3+1] = (t[1] * shade) >> 8;
                 ce[screenX*3+2] = (t[2] * shade) >> 8;

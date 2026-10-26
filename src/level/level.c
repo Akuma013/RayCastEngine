@@ -1,10 +1,13 @@
-#include "level.h"
-#include "../game/game.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
+#include "level.h"
+#include "../game/game.h"
+#include "../game/player.h"
+
+int level_enm_count = 0;
 
 int stackSize = 0;
 
@@ -13,6 +16,35 @@ int dr[] = { -1, 0, 1, 0 };
 int dc[] = { 0, 1, 0, -1 };
 
 
+
+void spawn_enemies(){
+    //delete previously generated enemies
+    numSprite-= level_enm_count;
+    enemyCount -= level_enm_count;
+    // generate new random number of enemies
+    level_enm_count = rand() % (currentLevel + 1) + 3;
+    int num_of_enemies = level_enm_count;
+    while (num_of_enemies > 0)
+    {
+        int enm_x = rand() % (map.width - 2) + 1;
+        int enm_y = rand() % (map.height - 2) + 1;
+
+        float pos_x = (float)(enm_x + 0.5f) * mapS;
+        float pos_y = (float)(enm_y + 0.5f) * mapS;
+
+        if (map.walls[enm_y * map.width + enm_x] == 0 && !((fabs(px - pos_x) <= 3*mapS) && (fabs(py - pos_y) <= 3*mapS)))
+        {
+            int s = numSprite;
+            sp[s].type = 3; sp[s].state = 1; sp[s].map = 2; sp[s].x = pos_x; sp[s].y = pos_y; sp[s].z = 20; // enemy
+            sp[s].r = 255; sp[s].g = 0; sp[s].b = 0;
+            numSprite++;
+            enemyCount++;
+            num_of_enemies--;
+        }
+        
+    }
+    
+}
 // Initialize the maze
 void initialize(Cell cells[ROWS][COLS], Position stack[ROWS*COLS], int maze[MAZE_HEIGHT][MAZE_WIDTH])
 {
@@ -56,7 +88,7 @@ int valid_cell(int row, int col, Cell cells[ROWS][COLS])
 
 // Shuffle directions to make the maze random
 void shuffle_directions(int directions[4])
-{
+{ 
     for (int i = 3; i > 0; i--)
     {
         int j = rand() % (i + 1);
@@ -71,8 +103,8 @@ void shuffle_directions(int directions[4])
 // Generate the maze using DFS
 void generate_maze(void)
 {
-    if (mapX % 2 == 0 || mapY % 2 == 0) {
-        printf("ERROR: maze generator requires odd mapX/mapY (got %d x %d)\n", mapX, mapY);
+    if (map.width % 2 == 0 || map.height % 2 == 0) {
+        printf("ERROR: maze generator requires odd mapX/mapY (got %d x %d)\n", map.width, map.height);
         return;
     }   
     // Original logical maze cells
@@ -158,6 +190,22 @@ void generate_maze(void)
         }
     }
 
+    int remove_wall_count = 35;
+
+    while (remove_wall_count > 0)
+    {
+        int wall_index = rand() % (map.width * map.height - 2 * map.width) + map.width;
+        if(wall_index % map.width != 0 && (wall_index + 1) % map.width != 0 &&
+        maze[wall_index / map.width][wall_index % map.width] == 1){
+        
+            maze[wall_index / map.width][wall_index % map.width] = 0;    
+            remove_wall_count--;
+        }
+        
+    }
+    
+    
+
     save_maze(maze);
 }
 
@@ -220,9 +268,9 @@ void load_maze(){
     }
 
     // Write every matrix value to the file
-    for (int r = 0; r < mapY; r++){
-        for (int c = 0; c < mapX; c++){
-             fscanf(file, "%d,", &mapW[r * mapX + c]);
+    for (int r = 0; r < map.height; r++){
+        for (int c = 0; c < map.width; c++){
+             fscanf(file, "%d,", &map.walls[r * map.width + c]);
         }
     }
 

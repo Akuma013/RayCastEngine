@@ -3,15 +3,15 @@
 
 #define M_PI 3.14159265358979323846
 
-extern int mapX;  // map width
-extern int mapY;  // map height
-#define mapS 64 // map cube size
-#define MAX_SPRITES 32
+// extern int mapX;  // map width
+// extern int mapY;  // map height
+
+#define MAX_SPRITES 64
 
 //MAP
-extern int mapW[35*13]; //walls 
-extern int mapF[35*13]; //floors
-extern int mapC[35*13]; //ceiling
+// extern int mapW[35*13]; //walls 
+// extern int mapF[35*13]; //floors
+// extern int mapC[35*13]; //ceiling
 
 
 extern int currentMap; // 0 = walls, 1 = floor, 2 = ceiling
@@ -48,6 +48,7 @@ typedef struct
 
 void game_update();
 void restore();
+void game_shutdown(void);
 
 extern sprite sp[MAX_SPRITES];
 extern ButtonKeys Keys;

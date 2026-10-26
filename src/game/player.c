@@ -2,6 +2,7 @@
 
 #include "player.h"
 #include "game.h"
+#include "map.h"
 
 float px, py, pdx, pdy, pa, sdx, sdy; //player coordinates
 //PLAYER
@@ -47,8 +48,8 @@ void player_move(){
     int cellX = (int)(px + xo) / 64;
     int cellY = (int)(py + yo) / 64;
 
-    if(mapW[(int)(py / 64) * mapX + cellX] == 0) { px += dx;}
-    if(mapW[cellY * mapX + (int)(px / 64)] == 0) { py += dy;}
+    if(map.walls[(int)(py / 64) * map.width + cellX] == 0) { px += dx;}
+    if(map.walls[cellY * map.width + (int)(px / 64)] == 0) { py += dy;}
     
     
 }

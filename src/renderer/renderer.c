@@ -1,4 +1,4 @@
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 #include <math.h>
 #include <float.h>
 #include <string.h>
@@ -19,12 +19,15 @@
 
 #include "../game/game.h"
 #include "../game/player.h"
+#include "../game/map.h"
+
 #include "../audio/audio.h"
 #include "../editor/editor.h"
 #include "sprites.h"
 #include "raycaster.h"
 
 #include "textures.h"
+#include "../game/map.h"
 
 //VSYNC
 int vsyncEnabled = 1;
@@ -77,9 +80,9 @@ void drawMapRays2D(){
 void drawMap2D(){
     int x, y, xo, yo;
     
-    for (y = 0; y < mapY; y++){
-        for (x = 0; x < mapX; x++){
-            if(mapW[y*mapX + x] > 0)
+    for (y = 0; y < map.height; y++){
+        for (x = 0; x < map.width; x++){
+            if(map.walls[y*map.width + x] > 0)
                 glColor3f(1,1,1);
             else
                 glColor3f(0,0,0);
@@ -192,8 +195,14 @@ void screen(int v){
 void init(){
     glClearColor(0.3,0.3,0.3,0);
     glPointSize(8); //AAAAAAA
+
+    if(!map_init(&map, 35, 13)){
+        fprintf(stderr, "Failed to allocate map\n");
+        return;
+    }
+
     restore();
-    
+
     glGenTextures(1, &screenTex); //create
     glBindTexture(GL_TEXTURE_2D, screenTex); // choose as current one
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, RENDER_WIDTH, RENDER_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL); //allocate
@@ -229,19 +238,19 @@ void init(){
 
     // sp[1].type = 2; sp[1].state = 1; sp[1].map = 1; sp[1].x = 1.5 * 64; sp[1].y = 4.5 * 64; sp[1].z =  0; // light 1
     // sp[2].type = 2; sp[2].state = 1; sp[2].map = 1; sp[2].x = 3.5 * 64; sp[2].y = 4.5 * 64; sp[2].z =  0; // light 2
-    sp[0].type = 1; sp[0].state = 1; sp[0].map = 0; sp[0].x = 1.5 * 64; sp[0].y = 5 * 64; sp[0].z = 20; // key 
-    sp[1].type = 3; sp[1].state = 1; sp[1].map = 2; sp[1].x = 2.5 * 64; sp[1].y = 2 * 64; sp[1].z = 20; // enemy
+    // sp[0].type = 1; sp[0].state = 1; sp[0].map = 0; sp[0].x = 1.5 * 64; sp[0].y = 5 * 64; sp[0].z = 20; // key 
+    // sp[1].type = 3; sp[1].state = 1; sp[1].map = 2; sp[1].x = 2.5 * 64; sp[1].y = 2 * 64; sp[1].z = 20; // enemy
     // add color for 2D edit view
-    sp[0].r = 255; sp[0].g = 0; sp[0].b = 0;
-    sp[1].r = 255; sp[1].g = 255; sp[1].b = 0;
+    // sp[0].r = 255; sp[0].g = 0; sp[0].b = 0;
+    // sp[1].r = 255; sp[1].g = 255; sp[1].b = 0;
 
     //create perimeter
     int x, y;
-    for(y = 0; y < mapY; y++){
-        for(x = 0; x < mapX; x++){
-            if(x == 0 || x == mapX - 1 || y == 0 || y == mapY - 1){mapW[y*mapX + x] = 2;}
-            mapF[y*mapX + x] = 1;
-            mapC[y*mapX + x] = 4;
+    for(y = 0; y < map.height; y++){
+        for(x = 0; x < map.width; x++){
+            // if(x == 0 || x == mapX - 1 || y == 0 || y == mapY - 1){mapW[y*mapX + x] = 2;}
+            map.floors[y*map.width + x] = 5;
+            map.ceilings[y*map.width + x] = 8;
         }
     }
 

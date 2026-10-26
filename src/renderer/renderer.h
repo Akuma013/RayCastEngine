@@ -1,9 +1,9 @@
 #ifndef RENDERER_H
 #define RENDERER_H
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 
-#define RENDER_WIDTH 1920
-#define RENDER_HEIGHT 1080
+#define RENDER_WIDTH 960
+#define RENDER_HEIGHT 540
 void drawMap2D();
 void drawMapRays2D();
 void drawPlayer2D();

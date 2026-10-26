@@ -4,12 +4,13 @@
 #include <stdlib.h>
 
 #include <GL/gl.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 
 #include "sprites.h"
 
 #include "../game/game.h"
 #include "../game/player.h"
+#include "../game/map.h"
 #include "textures.h"
 #include "raycaster.h"
 
@@ -51,10 +52,10 @@ void sprite_update(){
         int spx_add = ((int)sp[x].x + 15) >> 6 , spy_add = ((int)sp[x].y + 15) >> 6; //normal grid pos + offset
         int spx_sub = ((int)sp[x].x - 15) >> 6 , spy_sub = ((int)sp[x].y - 15) >> 6; //normal grid pos - offset
 
-        if(sp[x].x > px && mapW[spy*mapX + spx_sub] == 0){sp[x].x -= ran*frame_time_ms;}
-        if(sp[x].x < px && mapW[spy*mapX + spx_add] == 0){sp[x].x += ran*frame_time_ms;}
-        if(sp[x].y > py && mapW[spy_sub*mapX + spx] == 0){sp[x].y -= ran*frame_time_ms;}
-        if(sp[x].y < py && mapW[spy_add*mapX + spx] == 0){sp[x].y += ran*frame_time_ms;} 
+        if(sp[x].x > px && map.walls[spy*map.width + spx_sub] == 0){sp[x].x -= ran*frame_time_ms;}
+        if(sp[x].x < px && map.walls[spy*map.width + spx_add] == 0){sp[x].x += ran*frame_time_ms;}
+        if(sp[x].y > py && map.walls[spy_sub*map.width + spx] == 0){sp[x].y -= ran*frame_time_ms;}
+        if(sp[x].y < py && map.walls[spy_add*map.width + spx] == 0){sp[x].y += ran*frame_time_ms;} 
 
 
         
@@ -62,8 +63,6 @@ void sprite_update(){
 }
 
 void drawSprite(){
-
-
 
     int x,y, s;
 

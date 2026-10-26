@@ -1,6 +1,8 @@
 #include "audio.h"
 #include "../game/player.h"
 #include "../game/game.h"
+#include "../game/map.h"
+
 
 #include <math.h>
 #include <string.h>
@@ -69,7 +71,7 @@ int enemyCanSeePlayer(int x)
         int mapYPos = (int)checkY / 64;
 
         // Wall blocks the enemy's view
-        if (mapW[mapYPos * mapX + mapXPos] != 0)
+        if (map.walls[mapYPos * map.width + mapXPos] != 0)
         {
             return 0;
         }
@@ -90,8 +92,10 @@ void updateEnemySound(int x)
         sp[x].y / 64.0f,
         0.0f
     );
-
-    if (gameState == 2  && enemyCanSeePlayer(x)){
+    float dx = fabs(px - sp[x].x);
+    float dy = fabs(py - sp[x].y);
+    float dist_sqr = dx * dx + dy * dy;
+    if (gameState == 2  && dist_sqr <= (5*mapS) * (5*mapS) ){
         ALint state;
         alGetSourcei(enemySoundSource[x], AL_SOURCE_STATE, &state);
 
@@ -343,7 +347,8 @@ void loadEnemySounds()
         // positional audio
         alSourcei(enemySoundSource[i],AL_SOURCE_RELATIVE,AL_FALSE);
         alSourcef(enemySoundSource[i],AL_REFERENCE_DISTANCE,1.0f);
-        alSourcef(enemySoundSource[i],AL_ROLLOFF_FACTOR,1.0f);
+        alSourcef(enemySoundSource[i],AL_ROLLOFF_FACTOR,3.0f);
+        alSourcef(enemySoundSource[i], AL_MAX_DISTANCE, 5.0f);
     }
 }
 
@@ -403,17 +408,17 @@ void audioInit()
     }
 
     //load bg music
-    if (!loadWav("assets/audio/Maze3DSong.wav", &bgMusic_1_Buffer)){ //
-        printf("Failed to load background music!\n");
-    }
-    else{
-        printf("Background music loaded!\n");
-        alGenSources(1, &bgMusic_1_Source);
-        alSourcei(bgMusic_1_Source, AL_BUFFER, bgMusic_1_Buffer);
-        alSourcei(bgMusic_1_Source, AL_SOURCE_RELATIVE, AL_TRUE);
-        alSourcei(bgMusic_1_Source, AL_LOOPING, AL_TRUE);
-        alSourcef(bgMusic_1_Source, AL_GAIN, 0.5f);
-    }
+    // if (!loadWav("assets/audio/Maze3DSong.wav", &bgMusic_1_Buffer)){ //
+    //     printf("Failed to load background music!\n");
+    // }
+    // else{
+    //     printf("Background music loaded!\n");
+    //     alGenSources(1, &bgMusic_1_Source);
+    //     alSourcei(bgMusic_1_Source, AL_BUFFER, bgMusic_1_Buffer);
+    //     alSourcei(bgMusic_1_Source, AL_SOURCE_RELATIVE, AL_TRUE);
+    //     alSourcei(bgMusic_1_Source, AL_LOOPING, AL_TRUE);
+    //     alSourcef(bgMusic_1_Source, AL_GAIN, 0.5f);
+    // }
 
      //load walk audio
     if (!loadWav("assets/audio/walk1.wav", &footstepBuffer)){ //

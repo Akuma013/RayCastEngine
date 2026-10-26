@@ -1,5 +1,5 @@
 #include <GL/gl.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,6 +33,7 @@ int main(int argc, char* argv[]){
      
      init();
      audioInit();
+     glutCloseFunc(game_shutdown);
      glutMouseFunc(mouse);
      glutMotionFunc(MouseMove);
      glutPassiveMotionFunc(MouseLook);
