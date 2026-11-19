@@ -2,7 +2,7 @@
 #include "../game/player.h"
 #include "../game/game.h"
 #include "../game/map.h"
-
+#include "../game/game.h"
 
 #include <math.h>
 #include <string.h>
@@ -13,10 +13,10 @@ ALCcontext *audioContext = NULL;
 
 //door audio
 ALuint openDoorBuffer;
-ALuint openDoorSource;
+ALuint openDoorSource[DOOR_SOURCE_MAX];
 //pickup audio
-ALuint pickupBuffer;
-ALuint pickupSource;
+ALuint pickupBuffer[PICKUP_SOURCE_MAX];
+ALuint pickupSource[PICKUP_SOURCE_MAX];
 //bg music
 ALuint bgMusic_1_Buffer;
 ALuint bgMusic_1_Source;
@@ -24,18 +24,25 @@ ALuint bgMusic_1_Source;
 ALuint footstepBuffer;
 ALuint footstepSource;
 
-// die sound
+//player die sound
 ALuint diedBuffer;
 ALuint diedSource;
-
 
 // win sound
 ALuint winBuffer;
 ALuint winSource;
 
+
+// enemy killed sound
+ALuint enemyDeathBuffer[ENEMY_SOURCE_MAX];
+ALuint enemyDeathSource[ENEMY_SOURCE_MAX];
 //enemy sound
-ALuint enemySoundBuffer[32];
-ALuint enemySoundSource[32];
+ALuint enemySoundBuffer[ENEMY_SOURCE_MAX];
+ALuint enemySoundSource[ENEMY_SOURCE_MAX];
+
+//weapon sound
+ALuint weaponSoundBuffer[WEAPON_SOURCE_MAX];
+ALuint weaponSoundSource[WEAPON_SOURCE_MAX];
 
 float footstepTimer = 0.0f;
 
@@ -50,8 +57,8 @@ int enemyCanSeePlayer(int x)
     float enemyX = sp[x].x;
     float enemyY = sp[x].y;
 
-    float dx = px - enemyX;
-    float dy = py - enemyY;
+    float dx = player.px - enemyX;
+    float dy = player.py - enemyY;
 
     float distance = sqrt(dx * dx + dy * dy);
 
@@ -82,29 +89,58 @@ int enemyCanSeePlayer(int x)
 
 
 //AUDIO
-void updateEnemySound(int x)
-{
+void load_audio(){
+    loadEnemySounds();
+    loadPickupSounds();
+    loadDoorSounds();
+    loadWeaponSounds();
+}
+
+void enemyDeadSound(int x){
     
     alSource3f(
+        enemyDeathSource[x],
+        AL_POSITION, 
+        sp[x].x / 64.0f,
+        sp[x].y / 64.0f,
+        0.0f
+    );
+    // add some variation
+    alSourcef(enemyDeathSource[x], AL_PITCH, randomFloat(0.92f, 1.08f));
+
+    alSourcef(enemyDeathSource[x], AL_GAIN, randomFloat(4.65f, 5.85f));
+
+    alSourceRewind(enemyDeathSource[x]);
+    alSourcePlay(enemyDeathSource[x]);
+
+}
+
+void updateEnemySound(int x)
+{
+    if(sp[x].state == 1){
+        alSource3f(
         enemySoundSource[x],
         AL_POSITION,
         sp[x].x / 64.0f,
         sp[x].y / 64.0f,
         0.0f
-    );
-    float dx = fabs(px - sp[x].x);
-    float dy = fabs(py - sp[x].y);
-    float dist_sqr = dx * dx + dy * dy;
-    if (gameState == 2  && dist_sqr <= (5*mapS) * (5*mapS) ){
-        ALint state;
-        alGetSourcei(enemySoundSource[x], AL_SOURCE_STATE, &state);
+        );
+        float dx = fabs(player.px - sp[x].x);
+        float dy = fabs(player.py - sp[x].y);
+        float dist_sqr = dx * dx + dy * dy;
+        if (gameState == 2  && dist_sqr <= (5*mapS) * (5*mapS) ){
+            ALint state;
+            alGetSourcei(enemySoundSource[x], AL_SOURCE_STATE, &state);
 
-        if (state != AL_PLAYING){
-            alSourcePlay(enemySoundSource[x]);
-        }
+            if (state != AL_PLAYING){
+                alSourcePlay(enemySoundSource[x]);
+            }
+        }else{
+            alSourcePause(enemySoundSource[x]);
+        } 
     }else{
-        alSourcePause(enemySoundSource[x]);
-    }      
+        alSourceStop(enemySoundSource[x]);
+    }     
 
 }
 
@@ -120,6 +156,7 @@ void updateFootsteps(float delta_time)
     footstepTimer -= delta_time;
 
     if(footstepTimer <= 0){
+        // add some variation
         alSourcef(footstepSource, AL_PITCH, randomFloat(0.92f, 1.08f));
 
         alSourcef(footstepSource, AL_GAIN, randomFloat(0.65f, 0.85f));
@@ -127,7 +164,8 @@ void updateFootsteps(float delta_time)
         alSourceRewind(footstepSource);
         alSourcePlay(footstepSource);
 
-        footstepTimer = randomFloat(0.32f, 0.44f);
+        footstepTimer = randomFloat(0.5f - player.speed, 0.57f - player.speed);
+        // footstepTimer = randomFloat(0.32f, 0.44f);
 
     }
 }
@@ -139,13 +177,13 @@ void updateListener()
     // Player position
     alListener3f(
         AL_POSITION,
-        px / 64.0f,
-        py / 64.0f,
+        player.px / 64.0f,
+        player.py / 64.0f,
         0.0f
     );
 
     // Convert player's angle to radians
-    float angle = degToRad(pa);
+    float angle = degToRad(player.pa);
 
     // OpenAL listener orientation
     float orientation[] = {
@@ -158,16 +196,57 @@ void updateListener()
 
 
 
-void updatePickupSound()
+void updatePickupSound(int key_id)
 {
-    alSource3f(
-        pickupSource,   
-        AL_POSITION,
-        sp[0].x / 64.0f,
-        sp[0].y / 64.0f,
-        0.0f
-    );
+    ALint state;
+    for (int i = 0; i < PICKUP_SOURCE_MAX; i++)
+    {
+        alGetSourcei(pickupSource[i], AL_SOURCE_STATE, &state);
+        if (state != AL_PLAYING)
+        {
+            alSource3f(
+                pickupSource[i],   
+                AL_POSITION,
+                sp[key_id].x / 64.0f,
+                sp[key_id].y / 64.0f,
+                0.0f
+            );
 
+            alSourcePlay(pickupSource[i]);
+            return;
+        }
+        
+    }
+    
+}
+
+
+void updateDoorSound(float doorX, float doorY)
+{
+    ALint state;
+    for (int i = 0; i < DOOR_SOURCE_MAX; i++)
+    {
+        alGetSourcei(openDoorSource[i], AL_SOURCE_STATE, &state);
+        if (state != AL_PLAYING)
+        {
+            alSource3f(
+                openDoorSource[i],   
+                AL_POSITION,
+                doorX,
+                doorY,
+                0.0f
+            );
+
+            alSourcef(openDoorSource[i], AL_PITCH, randomFloat(0.9f, 1.1f));
+            alSourcef(openDoorSource[i], AL_GAIN, randomFloat(0.85f, 1.35f));
+
+            alSourceRewind(openDoorSource[i]);
+            alSourcePlay(openDoorSource[i]);
+            return;
+        }
+        
+    }
+    
 }
 
 
@@ -321,6 +400,34 @@ int loadWav(const char *filename, ALuint *buffer)
 }
 
 
+void loadWeaponSounds()
+{
+    for (int i = 0; i < WEAPON_SOURCE_MAX; i++)
+    {
+        if (!loadWav("assets/audio/shoot.wav",&weaponSoundBuffer[i])){
+            printf("Failed to load enemy %d sound!\n", i);
+            continue;
+        }
+
+        printf("Enemy %d sound loaded!\n", i);
+        alGenSources(1, &weaponSoundSource[i]);
+        alSourcei(weaponSoundSource[i],AL_BUFFER,weaponSoundBuffer[i]);
+        alSourcei(weaponSoundSource[i], AL_LOOPING, AL_FALSE);
+
+        // positional audio
+        alSourcei(weaponSoundSource[i],AL_SOURCE_RELATIVE,AL_TRUE);
+        alSourcef(weaponSoundSource[i], AL_GAIN, 0.5f);
+
+    }
+
+      
+
+
+    
+}
+
+
+
 
 void loadEnemySounds()
 {
@@ -348,8 +455,76 @@ void loadEnemySounds()
         alSourcei(enemySoundSource[i],AL_SOURCE_RELATIVE,AL_FALSE);
         alSourcef(enemySoundSource[i],AL_REFERENCE_DISTANCE,1.0f);
         alSourcef(enemySoundSource[i],AL_ROLLOFF_FACTOR,3.0f);
-        alSourcef(enemySoundSource[i], AL_MAX_DISTANCE, 5.0f);
+        alSourcef(enemySoundSource[i], AL_MAX_DISTANCE, 7.0f);
+
+
+
+          //load enemy death audio
+        if (!loadWav("assets/audio/swipe1.wav", &enemyDeathBuffer[i])){
+            printf("Failed to load enemydeath sound!\n");
+        }
+        else{
+            printf("Enemydeath sound loaded!\n");
+            alGenSources(1, &enemyDeathSource[i]);
+            alSourcei(enemyDeathSource[i], AL_BUFFER, enemyDeathBuffer[i]);
+            alSourcef(enemyDeathSource[i], AL_GAIN, 5.0f);
+            alSourcei(enemyDeathSource[i], AL_LOOPING, AL_FALSE);
+
+            alSourcei(enemyDeathSource[i],AL_SOURCE_RELATIVE,AL_FALSE);
+            alSourcef(enemyDeathSource[i],AL_REFERENCE_DISTANCE,1.0f);
+            alSourcef(enemyDeathSource[i],AL_ROLLOFF_FACTOR,3.0f);
+            alSourcef(enemyDeathSource[i], AL_MAX_DISTANCE, 7.0f);
+
+        }
     }
+
+      
+
+
+    
+}
+
+
+
+void loadPickupSounds()
+{
+    for (int i = 0; i < PICKUP_SOURCE_MAX; i++)
+    {
+
+        //load pickup audio
+        if (!loadWav("assets/audio/pickup.wav", &pickupBuffer[i])){
+            printf("Failed to load pickup sound!\n");
+        }
+        else{
+            printf("Pickup sound loaded!\n");
+            alGenSources(1, &pickupSource[i]);
+            alSourcei(pickupSource[i], AL_BUFFER, pickupBuffer[i]);
+            alSourcef(pickupSource[i], AL_GAIN, 1.0f);
+
+        }
+    }
+}
+
+void loadDoorSounds(){
+    //load door audio
+    if (!loadWav("assets/audio/open_door_2.wav", &openDoorBuffer)){
+        printf("Failed to load door sound!\n");
+        return;
+    }
+
+    printf("Door sound loaded!\n");
+
+    for (int i = 0; i < DOOR_SOURCE_MAX; i++)
+    {
+        alGenSources(1, &openDoorSource[i]);
+        alSourcei(openDoorSource[i], AL_BUFFER, openDoorBuffer);
+        alSourcef(openDoorSource[i], AL_GAIN, 1.0f);
+
+        alSourcei(openDoorSource[i], AL_SOURCE_RELATIVE, AL_FALSE);
+        alSourcef(openDoorSource[i], AL_REFERENCE_DISTANCE, 1.0f);
+        alSourcef(openDoorSource[i], AL_ROLLOFF_FACTOR, 1.0f);
+    }
+    
 }
 
 void audioInit()
@@ -378,34 +553,6 @@ void audioInit()
     alcMakeContextCurrent(audioContext);
     printf("OpenAL audio initialized!\n");
 
-    //load door audio
-    if (!loadWav("assets/audio/open_door_2.wav", &openDoorBuffer)){
-        printf("Failed to load door sound!\n");
-    }
-    else{
-        printf("Door sound loaded!\n");
-        alGenSources(1, &openDoorSource);
-        alSourcei(openDoorSource, AL_BUFFER, openDoorBuffer);
-        alSourcef(openDoorSource, AL_GAIN, 1.0f);
-
-        alSourcei(openDoorSource, AL_SOURCE_RELATIVE, AL_FALSE);
-        alSourcef(openDoorSource, AL_REFERENCE_DISTANCE, 1.0f);
-        alSourcef(openDoorSource, AL_ROLLOFF_FACTOR, 1.0f);
-
-
-    }
-
-    //load pickup audio
-    if (!loadWav("assets/audio/pickup.wav", &pickupBuffer)){
-        printf("Failed to load pickup sound!\n");
-    }
-    else{
-        printf("Pickup sound loaded!\n");
-        alGenSources(1, &pickupSource);
-        alSourcei(pickupSource, AL_BUFFER, pickupBuffer);
-        alSourcef(pickupSource, AL_GAIN, 1.0f);
-
-    }
 
     //load bg music
     // if (!loadWav("assets/audio/Maze3DSong.wav", &bgMusic_1_Buffer)){ //

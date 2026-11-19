@@ -15,6 +15,7 @@
 #include "../game/game.h"
 #include "../game/player.h"
 #include "../game/map.h"
+#include "../input/input.h"
 
 //public
 float rx, ry;
@@ -30,9 +31,9 @@ static int   wallTop[NUM_RAYS], wallBot[NUM_RAYS];
 static float rowDist[RENDER_HEIGHT];             // perpendicular floor distance (texture units)
 // static int   rowShade[RENDER_HEIGHT];            // 0..256
 static float rowWorld[RENDER_HEIGHT];
-static int   tablesReady = 0;
+// static int   tablesReady = 0;
 
-
+int horizon;
 
 //CALC DISTANCE OF RAY's PROJECTION (fixes fish eye)
 float distance(float ax, float ay, float bx, float by, float ang){
@@ -41,16 +42,9 @@ float distance(float ax, float ay, float bx, float by, float ang){
 
 
 
-static inline int shadeAt(float worldDist){
-    float s = 1.0f - worldDist / SHADE_FALLOFF;
-    if (s < SHADE_MIN) s = SHADE_MIN;
-    s *= s;
-    return (int)(s * 256.0f);
-}
-
 static void initRowTables(void){
     for (int y = 0; y < RENDER_HEIGHT; y++){
-        float dy = (y + 0.5f) - HALF_H;                  // distance below the horizon, never 0
+        float dy = fabsf((y + 0.5f) - horizon);                  // distance below the horizon, never 0
         if (dy < 0.5f) dy = 0.5f;
         rowDist[y] = (TEX * (float)RENDER_HEIGHT * 0.5f) / dy;   // = wall projection, so floor meets wall base
         float world = rowDist[y] * mapS / TEX;
@@ -60,7 +54,7 @@ static void initRowTables(void){
         // rowShade[y] = (int)(s * 256.0f);
         // rowShade[y] = shadeAt(world);
     }
-    tablesReady = 1;
+    // tablesReady = 1;
 }
 
 //RAYS
@@ -83,22 +77,22 @@ RayHit castRay(float ra){
         float Tan = tan(degToRad(ra));
         if(cos_ra > 0.001)//LOOKING RIGHT
         {
-            rx = (((int)px >> 6) << 6) + 64;
-            ry = (px - rx) * Tan + py;
+            rx = (((int)player.px >> 6) << 6) + 64;
+            ry = (player.px - rx) * Tan + player.py;
             xo = 64;
             yo = -xo * Tan;
         }
         else if(cos_ra < -0.001)// LOOKING LEFT
         {
-            rx = (((int)px >> 6) << 6) - 0.01f;
-            ry = (px - rx) * Tan + py;
+            rx = (((int)player.px >> 6) << 6) - 0.01f;
+            ry = (player.px - rx) * Tan + player.py;
             xo = -64;
             yo = -xo * Tan;
         }
         else//LOOKING STRAIGHT UP OR DOWN
         {
-            rx = px;
-            ry = py;
+            rx = player.px;
+            ry = player.py;
             dof = maxDof;
         }
         while(dof < maxDof){
@@ -112,7 +106,7 @@ RayHit castRay(float ra){
             {
                 vmt = map.walls[mp];
                 dof = maxDof;
-                disV = distance(px, py, rx, ry, ra);
+                disV = distance(player.px, player.py, rx, ry, ra);
             }
             else{
                 rx += xo;
@@ -130,23 +124,23 @@ RayHit castRay(float ra){
         float sin_ra = sin(degToRad(ra));
         if(sin_ra > 0.001)//LOOKING UP
         {
-            ry = (((int)py >> 6) << 6) - 0.01f;
-            rx = (py - ry) * Tan + px;
+            ry = (((int)player.py >> 6) << 6) - 0.01f;
+            rx = (player.py - ry) * Tan + player.px;
             yo = -64;
             xo = -yo * Tan;
         }
         
         else if(sin_ra < -0.001)// LOOKING DOWN
         {
-            ry = (((int)py >> 6) << 6) + 64;
-            rx = (py - ry) * Tan + px;
+            ry = (((int)player.py >> 6) << 6) + 64;
+            rx = (player.py - ry) * Tan + player.px;
             yo = 64;
             xo = -yo * Tan;
         }
         else//LOOKING STRAIGHT LEFT OR RIGHT
         {
-            rx = px;
-            ry = py;
+            rx = player.px;
+            ry = player.py;
             dof = maxDof;
         }
         while(dof < maxDof){
@@ -160,7 +154,7 @@ RayHit castRay(float ra){
             {
                 hmt = map.walls[mp];
                 dof = maxDof;
-                disH = distance(px, py, rx, ry, ra);
+                disH = distance(player.px, player.py, rx, ry, ra);
             }
             else{
                 rx += xo;
@@ -189,20 +183,23 @@ RayHit castRay(float ra){
 }
 
 void drawRays2D(){  
-    if(!tablesReady){initRowTables();}
+    // if(!tablesReady){initRowTables();}
+    horizon = HALF_H + (int)pitch_offs; 
+    initRowTables();
+
 
     const float fov = 60.0f;
     const float ray_step = fov / NUM_RAYS;
     const float texPerCell = (float)TEX / mapS;
 
-    ra = FixAng(pa + 30);
+    ra = FixAng(player.pa + 30);
     for(int r = 0; r < NUM_RAYS ; r++){
         RayHit hit = castRay(ra);
         rayX[r] = (int)rx; rayY[r] = (int)ry;
          // horizontal hit first
  
          float rad   = degToRad(ra);
-         float cosCa = cos(degToRad(pa - ra)); 
+         float cosCa = cos(degToRad(player.pa - ra));  // ray's and player's angle difference
         
         colFx[r] =  cos(rad) / cosCa;
         colFy[r] = -sin(rad) / cosCa;
@@ -210,7 +207,6 @@ void drawRays2D(){
         
 
         //DRAW 3D WALLS
-         // ray's and player's angle difference
         float old_dist = hit.dist;
         hit.dist *= cosCa; // fix fisheye
         if (hit.dist < 1.0f) hit.dist = 1.0f;  
@@ -218,23 +214,33 @@ void drawRays2D(){
 
         int lineHFull = (int)(mapS* (float)RENDER_HEIGHT/hit.dist);
         if (lineHFull < 1){                              // no wall hit: nothing to draw
-            wallTop[r] = wallBot[r] = HALF_H;
+            wallTop[r] = wallBot[r] = horizon;
             ra = FixAng(ra - ray_step);
             continue;
         }
     
         float ty_step = TEX / (float)lineHFull;
-        float ty_off = 0;         
-        int   lineHv  = lineHFull;
-        if(lineHv > RENDER_HEIGHT) {ty_off = (lineHv - RENDER_HEIGHT) / 2; lineHv = RENDER_HEIGHT;} //cap at 1080 (line Height)
-        int top = HALF_H - (lineHv >> 1); //line offset
-        lineH = lineHv; lineOff = top;
-        wallTop[r] = top; wallBot[r] = top + lineHv;
+        // float ty_off = 0;         
+        // if(lineHv > RENDER_HEIGHT) {ty_off = (lineHv - RENDER_HEIGHT) / 2; lineHv = RENDER_HEIGHT;} //cap at 1080 (line Height)
+        //line offset
+        int top_full = horizon - (lineHFull >> 1); 
+        int bot_full = top_full + lineHFull;
+
+        int top = top_full < 0 ? 0 : top_full;
+        int bot = bot_full > RENDER_HEIGHT ? RENDER_HEIGHT : bot_full;
+        int rows = bot - top;
+        wallTop[r] = top;
+        wallBot[r] = bot;
+
+        if (rows <= 0) {                             //wall completely off screen
+            wallTop[r] = wallBot[r] = horizon;
+            ra = FixAng(ra - ray_step);
+            continue;
+        }
         
 
         //DRAW WALLS
         int y;
-        float ty = ty_off * ty_step; // hmt * 32;
         int tx = (int) (hit.wallX * texPerCell) & TEX_MASK;
         if (hit.side == 1)  {if (ra > 180){tx = TEX - 1 - tx;}}
         else                {if (ra > 90 && ra < 270){tx = TEX - 1 - tx;}}
@@ -245,48 +251,40 @@ void drawRays2D(){
         const unsigned char *tex = &All_Textures[hit.tex * TEX * TEX * 3];
         
 
-        unsigned ty_fp   = (unsigned)(ty_off * ty_step * 65536.0f);   // 16.16 fixed point
+        unsigned ty_fp   = (unsigned)((top - top_full) * ty_step * 65536.0f);   // 16.16 fixed point
         unsigned step_fp = (unsigned)(ty_step * 65536.0f);
         for (int c = 0; c < COLUMN_W; c++)
         {
             unsigned char *dst = frameBuffer + ((size_t)top * RENDER_WIDTH + (r * COLUMN_W + c)) * 3;
             unsigned ty_fp_local = ty_fp;
-            for (y= 0; y < lineHv; y++)
+            for (y= 0; y < rows; y++)
             {
                 int ti = (((ty_fp_local >> 16) & TEX_MASK) * TEX + (int) tx) * 3;
                 dst[0] = (tex[ti + 0]*shade) >> 8; //shade
                 dst[1] = (tex[ti + 1]*shade) >> 8;
                 dst[2] = (tex[ti + 2]*shade) >> 8;
                 dst += RENDER_WIDTH * 3;
-                ty_fp_local += step_fp;
-                
-                
+                ty_fp_local += step_fp;       
             }    
         }
-        
 
         ra = FixAng(ra - ray_step); // go to next ray
-        
-        
-        
     }
 
 
-    const float px4 = px * texPerCell, py4 = py * texPerCell;
-    for (int y = HALF_H; y < RENDER_HEIGHT; y++){
+    const float px4 = player.px * texPerCell, py4 = player.py * texPerCell;
+    for (int y = 0; y < RENDER_HEIGHT; y++){
+        const int isFloor = (y >= horizon);
         const float D     = rowDist[y];
-
         const float W = rowWorld[y];   
         // const int   shade = rowShade[y];
         
-        const int   yc    = RENDER_HEIGHT - 1 - y;                    // mirrored ceiling row
-        unsigned char *fl = frameBuffer + (size_t)y  * RENDER_WIDTH * 3;
-        unsigned char *ce = frameBuffer + (size_t)yc * RENDER_WIDTH * 3;
+        unsigned char *row = frameBuffer + (size_t)y  * RENDER_WIDTH * 3;
 
         for (int r = 0; r < NUM_RAYS; r++){
             int shade = shadeAt(W * colInvCos[r]);
-            int doFloor = (y  >= wallBot[r]);
-            int doCeil  = (yc <  wallTop[r]);
+            int doFloor = isFloor && (y  >= wallBot[r]);
+            int doCeil  = !isFloor && (y <  wallTop[r]); //!!!!!!!!!!!!!!
             if (!doFloor && !doCeil) continue;
 
             int ix = (int)floorf(px4 + colFx[r] * D);
@@ -303,28 +301,16 @@ void drawRays2D(){
             int screenX = r * COLUMN_W + c;
             if (doFloor){
                 const unsigned char *t = &All_Textures[map.floors[cell] * TEX * TEX * 3 + tofs];
-                fl[screenX*3+0] = (t[0] * shade) >> 8;
-                fl[screenX*3+1] = (t[1] * shade) >> 8;
-                fl[screenX*3+2] = (t[2] * shade) >> 8;
+                row[screenX*3+0] = (t[0] * shade) >> 8;
+                row[screenX*3+1] = (t[1] * shade) >> 8;
+                row[screenX*3+2] = (t[2] * shade) >> 8;
             }
-            if (doCeil && map.ceilings[cell] > 0){
+            else if (doCeil && map.ceilings[cell] > 0){
                 const unsigned char *t = &All_Textures[map.ceilings[cell] * TEX * TEX * 3 + tofs];
-                ce[screenX*3+0] = (t[0] * shade) >> 8;
-                ce[screenX*3+1] = (t[1] * shade) >> 8;
-                ce[screenX*3+2] = (t[2] * shade) >> 8;
+                row[screenX*3+0] = (t[0] * shade) >> 8;
+                row[screenX*3+1] = (t[1] * shade) >> 8;
+                row[screenX*3+2] = (t[2] * shade) >> 8;
             }
-            // just for check
-            // if(doCeil){
-            //     if ( mapC[cell] > 0){
-            //     const unsigned char *t = &All_Textures[mapC[cell] * TEX * TEX * 3 + tofs];
-            //     ce[screenX*3+0] = (t[0] * shade) >> 8;
-            //     ce[screenX*3+1] = (t[1] * shade) >> 8;
-            //     ce[screenX*3+2] = (t[2] * shade) >> 8;
-            //     }else{
-            //         ce[screenX*3+0] = 255; ce[screenX*3+1] = 0; ce[screenX*3+2] = 255;
-            //     }
-                
-            // }
            }
            
         }

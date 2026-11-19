@@ -3,6 +3,7 @@ SRC = \
     src/rce.c \
     src/game/game.c \
     src/game/player.c \
+	src/game/map.c \
     src/audio/audio.c \
 	src/renderer/raycaster.c \
 	src/renderer/textures.c \
@@ -11,6 +12,7 @@ SRC = \
 	src/input/input.c \
 	src/renderer/renderer.c \
 	src/level/level.c \
+	src/weapon/weapon.c \
 
 MINGW = x86_64-w64-mingw32
 MINGW_ROOT = /usr/$(MINGW)/sys-root/mingw

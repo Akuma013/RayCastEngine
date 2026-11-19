@@ -50,7 +50,7 @@ void save(){
     fprintf(fp, "%i,%i,", map.width, map.height);
 
     //player info
-    fprintf(fp, "%f,%f,%f,", px, py, pa);    
+    fprintf(fp, "%f,%f,%f,", player.px, player.py, player.pa);    
 
 
     //number of sprites
@@ -96,11 +96,11 @@ void load_data(){
     fscanf(fp, "%i", &map.height); c = getc(fp);
 
     //player variables
-    fscanf(fp, "%f", &px); c = getc(fp);
-    fscanf(fp, "%f", &py); c = getc(fp);
-    fscanf(fp, "%f", &pa); c = getc(fp);
-    pdx = cos(degToRad(pa));
-    pdy = -sin(degToRad(pa));
+    fscanf(fp, "%f", &player.px); c = getc(fp);
+    fscanf(fp, "%f", &player.py); c = getc(fp);
+    fscanf(fp, "%f", &player.pa); c = getc(fp);
+    player.pdx = cos(degToRad(player.pa));
+    player.pdy = -sin(degToRad(player.pa));
 
     //number of sprites
     fscanf(fp, "%i", &numSprite); c = getc(fp);
@@ -244,8 +244,8 @@ void mapEditor(){
 
     //player
     glBegin(GL_POINTS);
-    glColor3ub(0,255,00); glVertex2i(px/64*6*8, py/64*6*8);
-    glColor3ub(0,155,00); glVertex2i((px + pdx*16)/64*6*8, (py + pdy*16)/64*6*8);
+    glColor3ub(0,255,00); glVertex2i(player.px/64*6*8, player.py/64*6*8);
+    glColor3ub(0,155,00); glVertex2i((player.px + player.pdx*16)/64*6*8, (player.py + player.pdy*16)/64*6*8);
     glEnd();
     
     glBegin(GL_POINTS);

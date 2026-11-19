@@ -9,6 +9,7 @@
 #include "../renderer/renderer.h"
 #include "../renderer/sprites.h"
 #include "../level/level.h"
+#include "../weapon/weapon.h"
 
 
 
@@ -34,6 +35,7 @@ int buttonState = 0; // which UI button is pressed
 int dragItem = 0; // indicates whether we are dragging an item or not
 int currentLevel = 1; // level that we can save in file
 
+float frame_timer = 100.0f;
 
 float frame1, frame2, frame_time_ms;
 int gameState;
@@ -42,17 +44,22 @@ float fade;
 
 float enemySoundTimer = 0;
 
+void update_timer(float delta_time){
+    frame_timer -= delta_time;
+    // printf("%f\n", frame_timer);
+}
+
 void game_shutdown(void){
     destroy_map(&map);
 }
 
 
 void restore(){
-    px=96; 
-    py=(map.height - 1) * mapS - mapS/2; 
-    pa=90;
-    pdx=cos(degToRad(pa)); 
-    pdy=-sin(degToRad(pa)); 
+    player.px=96; 
+    player.py=(map.height - 1) * mapS - mapS/2; 
+    player.pa=90;
+    player.pdx=cos(degToRad(player.pa)); 
+    player.pdy=-sin(degToRad(player.pa)); 
     map.walls[map.height * map.width - 2 * map.width + 1] = 0;
     map.walls[2 * map.width - 2] = 0;
     map.floors[2 * map.width - 2] = 15;
@@ -64,6 +71,7 @@ void game_update(){
     //3d game
     else{
         if (gameState == 0) { 
+            bullet_count = 0;
             //generate random maze
             load_data();
             generate_maze();
@@ -71,7 +79,8 @@ void game_update(){
             spawn_enemies();
             restore();
             
-            loadEnemySounds();
+            load_audio();
+            
             fade = 0; timer = 0; gameState = 1;
         }
         else if (gameState == 1) { //init game
@@ -87,10 +96,11 @@ void game_update(){
             glutSetCursor(GLUT_CURSOR_NONE);
             player_move();
             sprite_update();
+            // bullet_update(); ///!!!!!!!!!!!!!!!!
             render();
 
 
-            if (map.floors[((int)px >> 6 ) + ((int) py >> 6) * map.width] == 15){
+            if (map.floors[((int)player.px >> 6 ) + ((int) player.py >> 6) * map.width] == 15){
                 alSourcePlay(winSource);
                 fade = 0; timer = 0; gameState = 3;
             }

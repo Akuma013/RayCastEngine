@@ -10,39 +10,45 @@
 #include "../renderer/renderer.h"
 #include "../editor/editor.h"
 #include "../level/level.h"
+#include "../weapon/weapon.h"
 
-float delta;
+float delta_x;
+float delta_y;
+float pitch_offs;
+float pitch_sens = 1;
 float sensitivity = 0.03f;
 int centerX = 1920 / 2;
 int centerY = 1080 / 2;
+ 
 
+
+void SpecialDown(int key, int x, int y){
+    if (key == GLUT_KEY_SHIFT_L || key == GLUT_KEY_SHIFT_R) Keys.shift = 1;
+}
+
+void SpecialUp(int key, int x, int y){
+    if (key == GLUT_KEY_SHIFT_L || key == GLUT_KEY_SHIFT_R) Keys.shift = 0;
+}
 
 
 void ButtonDown(unsigned char key, int x, int y){
-    if (key == 'a'){Keys.a = 1;}
-    if (key == 'd'){Keys.d = 1;}
-    if (key == 'w'){Keys.w = 1;}
-    if (key == 's'){Keys.s = 1;}
-    if (key == 'e' && sp[0].state == 0){ //open doors
-        int xo = 0; if (pdx < 0) {xo = -25;} else {xo = 25;}
-        int yo = 0; if (pdy < 0) {yo = -25;} else {yo = 25;}
-        int ipx = px/64; int ipx_add_xo = (px + xo) / 64;
-        int ipy = py/64; int ipy_add_yo = (py + yo) / 64; 
+
+    if (key == 'a' || key == 'A'){Keys.a = 1;}
+    if (key == 'd' || key == 'D'){Keys.d = 1;}
+    if (key == 'w' || key == 'W'){Keys.w = 1;}
+    if (key == 's' || key == 'S'){Keys.s = 1;}
+    if ((key == 'e' || key == 'E') && sp[0].state == 0){ //open doors
+        int xo = 0; if (player.pdx < 0) {xo = -25;} else {xo = 25;}
+        int yo = 0; if (player.pdy < 0) {yo = -25;} else {yo = 25;}
+        int ipx = player.px/64; int ipx_add_xo = (player.px + xo) / 64;
+        int ipy = player.py/64; int ipy_add_yo = (player.py + yo) / 64; 
         if (map.walls[ipy_add_yo * map.width + ipx_add_xo] == 4) {
             map.walls[ipy_add_yo * map.width + ipx_add_xo] = 0;
 
             // Find the center of the door tile
             float doorX = (ipx_add_xo * 64.0f + 32.0f) / 64.0f;
             float doorY = (ipy_add_yo * 64.0f + 32.0f) / 64.0f;
-            alSource3f(
-                openDoorSource,
-                AL_POSITION,
-                doorX,
-                doorY,
-                0.0f
-            );
-
-            alSourcePlay(openDoorSource);
+            updateDoorSound(doorX, doorY);
         }
         
     }
@@ -58,25 +64,13 @@ void ButtonDown(unsigned char key, int x, int y){
 }
 
 void ButtonUp(unsigned char key, int x, int y){
-    if (key == 'a'){Keys.a = 0;}
-    if (key == 'd'){Keys.d = 0;}
-    if (key == 'w'){Keys.w = 0;}
-    if (key == 's'){Keys.s = 0;}
+    if (key == 'a' || key == 'A'){Keys.a = 0;}
+    if (key == 'd' || key == 'D'){Keys.d = 0;}
+    if (key == 'w' || key == 'W'){Keys.w = 0;}
+    if (key == 's' || key == 'S'){Keys.s = 0;}
     glutPostRedisplay();
 }
 
-void MouseLook(int x, int y){
-    if(gameState == 2){
-        if (x == centerX && y == centerY) return;
-
-        delta = centerX - x;
-        player_rotate(delta * sensitivity);
-        glutWarpPointer(centerX, centerY);
-    }
-    
-    
-    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
 
 void mouse(int button, int state, int x, int y){
     if(gameState == -1){
@@ -102,7 +96,7 @@ void mouse(int button, int state, int x, int y){
             
                 if(buttonState == 1){save();} //save
                 if(buttonState == 2){load_data(); load_maze();} // load
-                if(buttonState == 3){ pa += 45; if(pa > 359){pa -= 360;} pdx = cos(degToRad(pa)); pdy = -sin(degToRad(pa)); } //rotate player by 45 degrees
+                if(buttonState == 3){ player.pa += 45; if(player.pa > 359){player.pa -= 360;} player.pdx = cos(degToRad(player.pa)); player.pdy = -sin(degToRad(player.pa)); } //rotate player by 45 degrees
                 if(buttonState == 4){
                     int s = numSprite;
                     sp[s].type = 3; sp[s].state = 1; sp[s].map = 2; sp[s].x = numSprite*32; sp[s].y = 1*32; sp[s].z = 20; //add enemy
@@ -134,7 +128,7 @@ void mouse(int button, int state, int x, int y){
             int my = y*64/6/8;
 
             //select player
-            if(mx + 10 > px && mx - 10 < px && my + 10 > py && my - 10 < py){dragItem = 1;}
+            if(mx + 10 > player.px && mx - 10 < player.px && my + 10 > player.py && my - 10 < player.py){dragItem = 1;}
 
             //check all sprites if selected
             for (int i = 0; i < numSprite; i++)
@@ -145,16 +139,41 @@ void mouse(int button, int state, int x, int y){
         }
         //right button up
         if (button == GLUT_RIGHT_BUTTON && state == GLUT_UP){dragItem = 0;}
+    }else if(gameState == 2){
+
+        if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN){
+            alSourcePlay(weaponSoundSource[1]);
+            create_bullet();
+            draw_bullet();
+            
+            
+        }
     }
     
 }
 
+void MouseLook(int x, int y){
+    if(gameState == 2){
+        if (x == centerX && y == centerY) return;
+
+        delta_x = centerX - x;
+        delta_y = centerY - y;
+        pitch_offs += delta_y * pitch_sens;
+        if(pitch_offs > 300) {pitch_offs = 300;}
+        if(pitch_offs < -300) {pitch_offs = -300;}
+        player_rotate(delta_x * sensitivity);
+        glutWarpPointer(centerX, centerY);
+    }
+    
+    
+    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
 
 void MouseMove(int x, int y){
     if(gameState == -1) { //player
         if(dragItem == 1){
-            px = x * 64/6/8;
-            py = y * 64/6/8;
+            player.px = x * 64/6/8;
+            player.py = y * 64/6/8;
         }
         //move sprites
         else if (dragItem > 1)
@@ -170,8 +189,12 @@ void MouseMove(int x, int y){
     }else if(gameState == 2){
         if (x == centerX && y == centerY) return;
 
-        delta = centerX - x;
-        player_rotate(delta * sensitivity);
+        delta_x = centerX - x;
+        delta_y = centerY - y;
+        pitch_offs += delta_y * pitch_sens;
+        if(pitch_offs > 300) {pitch_offs = 300;}
+        if(pitch_offs < -300) {pitch_offs = -300;}
+        player_rotate(delta_x * sensitivity);
         glutWarpPointer(centerX, centerY);
     }
     

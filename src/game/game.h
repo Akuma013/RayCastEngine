@@ -24,6 +24,7 @@ extern int currentLevel; // level that we can save in file
 
 extern float enemySoundTimer;
 
+extern float frame_timer;
 
 extern float frame1, frame2, frame_time_ms;
 extern int gameState;
@@ -42,10 +43,11 @@ typedef struct
 typedef struct
 {
     int w, a, d, s;
+    int shift;
 
 }ButtonKeys;
 
-
+void update_timer(float delta_time);
 void game_update();
 void restore();
 void game_shutdown(void);

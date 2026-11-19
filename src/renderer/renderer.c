@@ -28,9 +28,14 @@
 
 #include "textures.h"
 #include "../game/map.h"
+#include "../weapon/weapon.h"
 
 //VSYNC
 int vsyncEnabled = 1;
+static int move_up = 1;
+static int move_down = 0;
+static int offset = 0;
+
 
 void applyVsync(int on){
 #ifdef _WIN32
@@ -54,6 +59,33 @@ GLuint screenTex;
 int map_scale = 8;
 
 
+void frame_update(){ // new (to change)
+    if(frame_timer <= 0){
+        //enemy animation
+        txt_map++;
+        txt_map %= 4;
+        frame_timer = 100.0f;
+        //player animation
+        // if (move_up){
+        //     camera_H+=1;
+        //     offset+=1;
+        // }
+        // else if(move_down){
+        //     camera_H-=1;
+        //     offset-=1;
+        // }
+        
+        if(offset >= 100){
+            move_up = 0;
+            move_down = 1;
+        }else if(offset<= -100){
+            move_up = 1;
+            move_down = 0;
+        }
+    }
+}
+
+
 void setPixel(int x, int y, int r, int g, int b){
     if (x < 0 || x >= RENDER_WIDTH || y < 0 || y >= RENDER_HEIGHT) return;
     int index = (y * RENDER_WIDTH + x) * 3;
@@ -71,7 +103,7 @@ void drawMapRays2D(){
         glColor3f(0,1, 0);
         for (int i = 0; i < RENDER_WIDTH; i++)
         {
-            glVertex2i(px /map_scale, py /map_scale);
+            glVertex2i(player.px /map_scale, player.py /map_scale);
             glVertex2i(rayX[i]/map_scale, rayY[i]/map_scale);
         }
         
@@ -108,7 +140,7 @@ void drawPlayer2D(){
     glColor3f(1,1,0);
     glPointSize(8);
     glBegin(GL_POINTS); 
-    glVertex2i(px / map_scale,py / map_scale);
+    glVertex2i(player.px / map_scale,player.py / map_scale);
     glEnd();
 
     // glLineWidth(3);
@@ -116,6 +148,21 @@ void drawPlayer2D(){
     // glVertex2i(px, py);
     // glVertex2i(px + pdx*20, py + pdy*20);
     // glEnd();
+}
+
+
+void drawBullets2D(){
+    for (int blt = 0; blt < bullet_count; blt++)
+    {
+        if(bullet[blt].is_active){
+             glColor3f(0.5,0,0.5);
+            glPointSize(8);
+            glBegin(GL_POINTS); 
+            glVertex2i(bullet[blt].bx / map_scale,bullet[blt].by / map_scale);
+            glEnd();
+        }
+    }
+    
 }
 
 //DRAW SKY
@@ -128,7 +175,7 @@ void draw_sky(){
     {
         for (x = 0; x < 120; x++) //120
         {
-            int xo = (int) pa * 2 - x; if (xo < 0 ){xo += 120;} xo %= 120; //120
+            int xo = (int) player.pa * 2 - x; if (xo < 0 ){xo += 120;} xo %= 120; //120
 
             int pixel = (y*120 +  xo ) * 3; //120
             int red = sky[pixel + 0];
@@ -268,6 +315,9 @@ void init(){
 
 void display(){
 
+    //frame upd
+    frame_update();
+
     //fps
     frame2 = glutGet(GLUT_ELAPSED_TIME); frame_time_ms = (frame2 - frame1); frame1 = glutGet(GLUT_ELAPSED_TIME);
     static float fpsTimer = 0;
@@ -275,7 +325,7 @@ void display(){
     fpsTimer += frame_time_ms;
     frameCount++;
     if (fpsTimer >= 500.0f){
-        printf("FPS: %.1f\n", 1000.0f * frameCount / fpsTimer);
+        //printf("FPS: %.1f\n", 1000.0f * frameCount / fpsTimer);
         fpsTimer = 0;
         frameCount = 0;
     }
@@ -283,14 +333,13 @@ void display(){
     //music and sf
     updateMusic();
     updateListener();
-    updatePickupSound();
     updateFootsteps(frame_time_ms / 1000.0f);
     for(int x = 0; x < numSprite; x++){
-        
         if(sp[x].type != 3){continue;} //skip if not enemy
         updateEnemySound(x);
     }
     game_update();
+    update_timer(frame_time_ms);
 
     glutPostRedisplay();
     glutSwapBuffers();
@@ -310,6 +359,7 @@ void render(){
     draw_sky(); 
     // draw_floor2D();
     drawRays2D();
+    draw_bullet();
     drawSprite();
     
     glBindTexture(GL_TEXTURE_2D, screenTex);
@@ -331,5 +381,6 @@ void render(){
     drawMap2D();
     drawMapRays2D();
     drawPlayer2D();
+    drawBullets2D();
     
 }

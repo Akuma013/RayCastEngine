@@ -32,7 +32,7 @@ void spawn_enemies(){
         float pos_x = (float)(enm_x + 0.5f) * mapS;
         float pos_y = (float)(enm_y + 0.5f) * mapS;
 
-        if (map.walls[enm_y * map.width + enm_x] == 0 && !((fabs(px - pos_x) <= 3*mapS) && (fabs(py - pos_y) <= 3*mapS)))
+        if (map.walls[enm_y * map.width + enm_x] == 0 && !((fabs(player.px - pos_x) <= 3*mapS) && (fabs(player.py - pos_y) <= 3*mapS)))
         {
             int s = numSprite;
             sp[s].type = 3; sp[s].state = 1; sp[s].map = 2; sp[s].x = pos_x; sp[s].y = pos_y; sp[s].z = 20; // enemy
@@ -40,6 +40,10 @@ void spawn_enemies(){
             numSprite++;
             enemyCount++;
             num_of_enemies--;
+
+            sp[s+1].type = 1; sp[s+1].state = 1; sp[s+1].map = 0; sp[s+1].x = pos_x; sp[s+1].y = pos_y; sp[s+1].z = 20; // key 
+            sp[s].r = 255; sp[s].g = 255; sp[s].b = 0;
+            numSprite++;
         }
         
     }

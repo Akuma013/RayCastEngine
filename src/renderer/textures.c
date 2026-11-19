@@ -10,17 +10,21 @@
 #include "../../assets/textures/lost.ppm"
 #include "../../assets/textures/sprites.txt"
 #include "../../assets/textures/All_Buttons.ppm"
+#include "../../assets/textures/Goofillet.ppm"
 
 
 
 
 // GLsizei number_of_textures = 21;
 // GLuint wallTextureID[21];
+int txt_map = 0;
+
 unsigned char All_Textures[];
+unsigned char goofillet[];
 int sky[];
 int title[];
 int won[];
 int lost[];
-int sprites[];
+unsigned char sprites[];
 int All_Buttons[];
 

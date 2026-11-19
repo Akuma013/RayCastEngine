@@ -36,6 +36,8 @@ int main(int argc, char* argv[]){
      glutCloseFunc(game_shutdown);
      glutMouseFunc(mouse);
      glutMotionFunc(MouseMove);
+     glutSpecialFunc(SpecialDown);
+     glutSpecialUpFunc(SpecialUp);
      glutPassiveMotionFunc(MouseLook);
      glutDisplayFunc(display);
      glutReshapeFunc(resize);
